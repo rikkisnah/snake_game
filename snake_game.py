@@ -60,6 +60,10 @@ def gameLoop():
     snake_List = []
     Length_of_snake = 1
 
+    easter_egg_message = ""
+    easter_egg_timer = 0
+    easter_egg_pos = (0, 0)
+
     # Position of the food
     foodx = round(random.randrange(0, screen_width - snake_block) / 20.0) * 20.0
     foody = round(random.randrange(0, screen_height - snake_block) / 20.0) * 20.0
@@ -102,6 +106,12 @@ def gameLoop():
         x1 += x1_change
         y1 += y1_change
         screen.fill(black)
+
+        if easter_egg_timer > 0:
+            mesg = font_style.render(easter_egg_message, True, white)
+            screen.blit(mesg, easter_egg_pos)
+            easter_egg_timer -= 1
+
         pygame.draw.rect(screen, red, [foodx, foody, snake_block, snake_block])
         snake_Head = []
         snake_Head.append(x1)
@@ -123,6 +133,12 @@ def gameLoop():
             foodx = round(random.randrange(0, screen_width - snake_block) / 20.0) * 20.0
             foody = round(random.randrange(0, screen_height - snake_block) / 20.0) * 20.0
             Length_of_snake += 1
+
+            if random.randint(1, 5) == 1:  # 20% chance to trigger easter egg
+                easter_egg_message = "@rekharoy"
+                easter_egg_timer = 30  # Show for 30 frames
+                easter_egg_pos = (random.randint(50, screen_width - 250), random.randint(50, screen_height - 100))
+
 
         clock.tick(snake_speed)
 
