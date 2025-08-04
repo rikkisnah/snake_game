@@ -147,6 +147,7 @@ cython_debug/
 
 # Project specific
 project.txt
+high_scores.json
 
 # JetBrains IDEs
 .idea/

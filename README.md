@@ -10,6 +10,11 @@ This is a simple implementation of the classic Snake game using Python and the P
 - The current score is displayed.
 - A simple start and end screen.
 - Keyboard controls for snake movement.
+- **High Score System**: Tracks top 10 scores with player names.
+- **Player Name Entry**: Enter your name before playing.
+- **Persistent Scores**: High scores are saved between game sessions.
+- **Fullscreen Mode**: Toggle fullscreen with F key for immersive gameplay.
+- Easter egg feature that randomly displays "@rekharoy".
 
 ## Getting Started
 
@@ -37,9 +42,13 @@ Run the following command to start the game:
 make run
 ```
 
+- Press `SPACE` to start the game or `H` to view high scores from the main menu.
+- Press `F` to toggle fullscreen mode on/off.
+- Press `ESC` to exit fullscreen mode.
+- Enter your name when prompted (press ENTER when done).
 - Use the arrow keys (Up, Down, Left, Right) to control the snake.
-- Press the `SPACE` bar to start the game.
-- If you lose, press `C` to play again or `Q` to quit.
+- After game over, your score is automatically saved to the high scores.
+- Press `C` to play again or `Q` to quit after losing.
 
 ## Running the Tests
 

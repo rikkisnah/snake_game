@@ -21,14 +21,14 @@ $(VENV_DIR)/bin/activate: requirements.txt
 	. $(VENV_DIR)/bin/activate
 
 # Run the game
-run:
+run: install
 	@echo "Starting the game..."
-	$(PYTHON) snake_game.py
+	. $(VENV_DIR)/bin/activate && $(PYTHON) snake_game.py
 
 # Run tests
-test:
+test: install
 	@echo "Running tests..."
-	$(PYTHON) -m unittest discover
+	. $(VENV_DIR)/bin/activate && $(PYTHON) -m unittest discover
 
 # Clean up
 clean:
