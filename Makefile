@@ -18,7 +18,7 @@ install: $(VENV_DIR)/bin/activate
 $(VENV_DIR)/bin/activate: requirements.txt
 	@echo "Creating virtual environment..."
 	$(PYTHON) -m venv $(VENV_DIR)
-	. $(VENV_DIR)/bin/activate
+	. $(VENV_DIR)/bin/activate && pip install --upgrade pip
 
 # Run the game
 run: install
