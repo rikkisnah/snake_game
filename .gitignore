@@ -151,3 +151,15 @@ high_scores.json
 
 # JetBrains IDEs
 .idea/
+.env.local
+.env.production
+.env.development
+tmp/
+.temp/
+.cache/
+.ruff_cache/
+.venv/
+.uv-cache/
+!.env.example
+!.env.sample
+!.env.template

@@ -1,68 +1,86 @@
+<!-- #ai-assisted with OCA/OpenAI Model with human supervision -->
+
 # Snake Game
 
-This is a simple implementation of the classic Snake game using Python and the Pygame library.
+## Purpose
+
+This is a local desktop implementation of the classic Snake game built with Python and Pygame. It includes player-name entry, persistent top-ten scores, fullscreen support, and a small easter egg.
+
+The repository also includes local-first agentic engineering governance, clean-code guidance, scorecard gates, durable non-secret memory, and explicit workflow docs.
 
 ## Features
 
-- The snake can move in four directions (up, down, left, right).
-- The snake grows longer each time it eats food.
-- The game ends if the snake collides with itself or the walls.
-- The current score is displayed.
-- A simple start and end screen.
-- Keyboard controls for snake movement.
-- **High Score System**: Tracks top 10 scores with player names.
-- **Player Name Entry**: Enter your name before playing.
-- **Persistent Scores**: High scores are saved between game sessions.
-- **Fullscreen Mode**: Toggle fullscreen with F key for immersive gameplay.
-- Easter egg feature that randomly displays "@rekharoy".
+- Four-direction keyboard movement and wall/self collision detection.
+- Persistent high scores in the ignored local file `high_scores.json`.
+- Start, high-score, name-entry, gameplay, and game-over screens.
+- Fullscreen switching with `F` and an occasional `@rekharoy` easter egg.
 
-## Getting Started
-
-### Prerequisites
-
-- Python 3
-- pip
-- Make
-
-### Installation
-
-Simply run the following command to install the dependencies:
+## Quick Start
 
 ```bash
-make install
-```
-
-This will create a virtual environment and install the required packages.
-
-## How to Play
-
-Run the following command to start the game:
-
-```bash
+make setup
 make run
 ```
 
-- Press `SPACE` to start the game or `H` to view high scores from the main menu.
-- Press `F` to toggle fullscreen mode on/off.
-- Press `ESC` to exit fullscreen mode.
-- Enter your name when prompted (press ENTER when done).
-- Use the arrow keys (Up, Down, Left, Right) to control the snake.
-- After game over, your score is automatically saved to the high scores.
-- Press `C` to play again or `Q` to quit after losing.
-
-## Running the Tests
-
-To run the unit tests, execute the following command:
+Run the full local validation gate separately:
 
 ```bash
-make test
+make validate
 ```
 
-## Makefile Commands
+## Common Commands
 
-The `Makefile` includes the following commands:
+```bash
+make setup
+make install
+make run
+make format
+make test
+make lint
+make score
+make score-gate
+make check
+make validate
+make clean
+make clean-env
+```
 
-- `make install`: Creates a virtual environment and installs the dependencies.
-- `make run`: Starts the game.
-- `make test`: Runs the unit tests.
-- `make clean`: Removes temporary files and directories.
+`make setup` creates `.venv` with `uv` and installs `pygame==2.6.1` from `requirements.txt`. `make install` is a compatibility alias.
+
+## Controls
+
+- Main menu: `SPACE` starts, `H` shows high scores, and `F` toggles fullscreen.
+- Name entry: type up to 15 letters, numbers, spaces, underscores, or hyphens; press `ENTER` to continue.
+- Gameplay: use the arrow keys to move and `F` to toggle fullscreen.
+- Fullscreen: `ESC` returns to windowed mode.
+- Game over: `C` starts again and `Q` quits.
+
+## Validation
+
+`make validate` is the full local gate. It compiles the Python sources, runs the gameplay tests with dummy video/audio drivers for headless environments, runs governance regression tests, and enforces the architecture score gate.
+
+`make score` prints the governance scorecard. `make score-gate` fails unless every enabled scorecard dimension is 10/10.
+
+## Agentic Development Workflow
+
+- Read `AGENTS.md` before changing code.
+- Use `MEMORY.md` only for durable non-secret project context.
+- Use `CONTEXT.md` only as a short-lived branch-local placeholder.
+- Keep changes small, reviewable, tested, and documented.
+- Treat documentation drift as a bug.
+
+## Documentation Map
+
+- `AGENTS.md`: authoritative agent operating contract.
+- `MEMORY.md`: durable non-secret project context.
+- `CONTEXT.md`: temporary branch handoff placeholder.
+- `docs/agent/`: clean-code, review, subagent, testing, and language guidance.
+- `docs/adr/template.md`: architecture decision record template.
+- `INSTALL.md`: setup workflow, when generated for this runtime.
+- `DEVELOP.md`: daily development loop.
+- `CREATE-PR.md`: local PR handoff workflow.
+- `DEPLOY.md`: deployment workflow, when generated for this runtime.
+
+## Security And Secrets
+
+Never commit secrets, credentials, private keys, bearer tokens, raw auth files, customer data, huge logs, or local-only environment files. Use safe placeholders such as `<token>`, `<secret>`, `REPLACE_ME`, or committed `.env.example` files.

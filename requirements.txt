@@ -1,3 +1,5 @@
+#ai-assisted with OCA/OpenAI Model with human supervision
+
 # Snake Game Requirements
-# Python 3.8+ required
+# Python 3.11+ required
 pygame==2.6.1
