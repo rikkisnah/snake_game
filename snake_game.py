@@ -1,8 +1,14 @@
-import pygame
-import sys
-import random
+#ai-assisted with OCA/OpenAI Model with human supervision
+
+from __future__ import annotations
+
 import json
 import os
+import random
+import sys
+from dataclasses import dataclass, field
+
+import pygame
 
 # Initialize Pygame
 pygame.init()
@@ -44,21 +50,44 @@ small_font = pygame.font.SysFont(None, 25)
 # High scores file
 HIGH_SCORES_FILE = "high_scores.json"
 
+Color = tuple[int, int, int]
+HighScore = dict[str, str | int]
 
-def your_score(score):
+
+@dataclass
+class GameState:
+    """Mutable state for one round of Snake."""
+
+    x: float
+    y: float
+    food_x: float
+    food_y: float
+    x_change: int = 0
+    y_change: int = 0
+    segments: list[list[float]] = field(default_factory=list)
+    length: int = 1
+    game_over: bool = False
+    game_close: bool = False
+    score_saved: bool = False
+    easter_egg_message: str = ""
+    easter_egg_timer: int = 0
+    easter_egg_pos: tuple[int, int] = (0, 0)
+
+
+def your_score(score: int) -> None:
     value = score_font.render("Your Score: " + str(score), True, white)
     screen.blit(value, [0, 0])
 
 
-def our_snake(snake_block, snake_list):
-    for x in snake_list:
-        pygame.draw.rect(screen, green, [x[0], x[1], snake_block, snake_block])
+def our_snake(block_size: int, snake_list: list[list[float]]) -> None:
+    for segment in snake_list:
+        pygame.draw.rect(screen, green, [segment[0], segment[1], block_size, block_size])
 
 
-def toggle_fullscreen():
+def toggle_fullscreen() -> None:
     global screen, screen_width, screen_height, is_fullscreen
     is_fullscreen = not is_fullscreen
-    
+
     if is_fullscreen:
         screen_width = fullscreen_width
         screen_height = fullscreen_height
@@ -68,29 +97,35 @@ def toggle_fullscreen():
         screen_height = default_height
         screen = pygame.display.set_mode((screen_width, screen_height))
 
-def message(msg, color, y_offset=0, x_pos=None):
+def message(
+    msg: str,
+    color: Color,
+    y_offset: int = 0,
+    x_pos: float | None = None,
+) -> None:
     mesg = font_style.render(msg, True, color)
     if x_pos is None:
         x_pos = screen_width / 6
     screen.blit(mesg, [x_pos, screen_height / 3 + y_offset])
 
 
-def load_high_scores():
+def load_high_scores() -> list[HighScore]:
     if os.path.exists(HIGH_SCORES_FILE):
         try:
-            with open(HIGH_SCORES_FILE, 'r') as f:
-                return json.load(f)
-        except:
+            with open(HIGH_SCORES_FILE, "r", encoding="utf-8") as score_file:
+                scores = json.load(score_file)
+                return scores if isinstance(scores, list) else []
+        except (OSError, json.JSONDecodeError):
             return []
     return []
 
 
-def save_high_scores(scores):
-    with open(HIGH_SCORES_FILE, 'w') as f:
-        json.dump(scores, f)
+def save_high_scores(scores: list[HighScore]) -> None:
+    with open(HIGH_SCORES_FILE, "w", encoding="utf-8") as score_file:
+        json.dump(scores, score_file)
 
 
-def add_high_score(name, score):
+def add_high_score(name: str, score: int) -> list[HighScore]:
     scores = load_high_scores()
     scores.append({"name": name, "score": score})
     scores.sort(key=lambda x: x["score"], reverse=True)
@@ -99,10 +134,10 @@ def add_high_score(name, score):
     return scores
 
 
-def get_player_name():
+def get_player_name() -> str:
     name = ""
     input_active = True
-    
+
     while input_active:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -118,9 +153,9 @@ def get_player_name():
                 elif event.key == pygame.K_BACKSPACE:
                     name = name[:-1]
                 elif len(name) < 15:  # Limit name length
-                    if event.unicode.isalnum() or event.unicode in [' ', '_', '-']:
+                    if event.unicode.isalnum() or event.unicode in [" ", "_", "-"]:
                         name += event.unicode
-        
+
         screen.fill(black)
         message("Enter Your Name:", white, -50)
         name_surface = font_style.render(name + "_", True, green)
@@ -129,158 +164,168 @@ def get_player_name():
         screen.blit(hint, [screen_width / 3, screen_height / 2 + 60])
         pygame.display.update()
         clock.tick(15)
-    
+
     return name if name else "Anonymous"
 
 
-def display_high_scores(current_score=None, player_name=None):
+def display_high_scores(current_score: int | None = None, player_name: str | None = None) -> None:
     scores = load_high_scores()
-    
+
     screen.fill(black)
     title = font_style.render("HIGH SCORES", True, green)
     screen.blit(title, [screen_width / 3, 50])
-    
+
     y_pos = 120
     for i, score_data in enumerate(scores[:10]):
-        color = green if score_data.get("name") == player_name and score_data.get("score") == current_score else white
+        is_current_player = (
+            score_data.get("name") == player_name
+            and score_data.get("score") == current_score
+        )
+        color = green if is_current_player else white
         score_text = f"{i+1}. {score_data['name'][:15]:15} {score_data['score']:5}"
         score_surface = small_font.render(score_text, True, color)
         screen.blit(score_surface, [screen_width / 3, y_pos])
         y_pos += 30
-    
+
     if current_score is not None:
         current_text = score_font.render(f"Your Score: {current_score}", True, white)
         screen.blit(current_text, [screen_width / 3, y_pos + 30])
-    
+
     hint = small_font.render("Press C-Play Again or Q-Quit", True, white)
     screen.blit(hint, [screen_width / 3, screen_height - 80])
-    
+
     pygame.display.update()
 
 
-def gameLoop(player_name="Player"):
-    global screen_width, screen_height
-    game_over = False
-    game_close = False
+def _random_food_coordinate(limit: int) -> float:
+    return round(random.randrange(0, limit - snake_block) / 20.0) * 20.0
 
-    # Initial position of the snake
-    x1 = screen_width / 2
-    y1 = screen_height / 2
 
-    x1_change = 0
-    y1_change = 0
+def _random_food_position() -> tuple[float, float]:
+    return _random_food_coordinate(screen_width), _random_food_coordinate(screen_height)
 
-    snake_List = []
-    Length_of_snake = 1
 
-    easter_egg_message = ""
-    easter_egg_timer = 0
-    easter_egg_pos = (0, 0)
-    
-    score_saved = False  # Flag to track if score has been saved
+def _new_game_state() -> GameState:
+    food_x, food_y = _random_food_position()
+    return GameState(screen_width / 2, screen_height / 2, food_x, food_y)
 
-    # Position of the food
-    foodx = round(random.randrange(0, screen_width - snake_block) / 20.0) * 20.0
-    foody = round(random.randrange(0, screen_height - snake_block) / 20.0) * 20.0
 
-    while not game_over:
-
-        while game_close == True:
-            final_score = Length_of_snake - 1
-            if not score_saved:
-                scores = add_high_score(player_name, final_score)
-                score_saved = True
-            display_high_scores(final_score, player_name)
-
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_f:
-                        toggle_fullscreen()
-                    elif event.key == pygame.K_ESCAPE and is_fullscreen:
-                        toggle_fullscreen()
-                    elif event.key == pygame.K_q:
-                        game_over = True
-                        game_close = False
-                    elif event.key == pygame.K_c:
-                        main_game()
+def _handle_game_over_screen(state: GameState, player_name: str) -> None:
+    while state.game_close and not state.game_over:
+        final_score = state.length - 1
+        if not state.score_saved:
+            add_high_score(player_name, final_score)
+            state.score_saved = True
+        display_high_scores(final_score, player_name)
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_over = True
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_f:
-                    toggle_fullscreen()
-                    # Reposition food if it's out of bounds after fullscreen toggle
-                    if foodx >= screen_width - snake_block:
-                        foodx = round(random.randrange(0, screen_width - snake_block) / 20.0) * 20.0
-                    if foody >= screen_height - snake_block:
-                        foody = round(random.randrange(0, screen_height - snake_block) / 20.0) * 20.0
-                elif event.key == pygame.K_ESCAPE and is_fullscreen:
-                    toggle_fullscreen()
-                    # Reposition food if needed
-                    if foodx >= screen_width - snake_block:
-                        foodx = round(random.randrange(0, screen_width - snake_block) / 20.0) * 20.0
-                    if foody >= screen_height - snake_block:
-                        foody = round(random.randrange(0, screen_height - snake_block) / 20.0) * 20.0
-                elif event.key == pygame.K_LEFT:
-                    x1_change = -snake_block
-                    y1_change = 0
-                elif event.key == pygame.K_RIGHT:
-                    x1_change = snake_block
-                    y1_change = 0
-                elif event.key == pygame.K_UP:
-                    y1_change = -snake_block
-                    x1_change = 0
-                elif event.key == pygame.K_DOWN:
-                    y1_change = snake_block
-                    x1_change = 0
-
-        if x1 >= screen_width or x1 < 0 or y1 >= screen_height or y1 < 0:
-            game_close = True
-        x1 += x1_change
-        y1 += y1_change
-        screen.fill(black)
-
-        if easter_egg_timer > 0:
-            mesg = font_style.render(easter_egg_message, True, white)
-            screen.blit(mesg, easter_egg_pos)
-            easter_egg_timer -= 1
-
-        pygame.draw.rect(screen, red, [foodx, foody, snake_block, snake_block])
-        snake_Head = []
-        snake_Head.append(x1)
-        snake_Head.append(y1)
-        snake_List.append(snake_Head)
-        if len(snake_List) > Length_of_snake:
-            del snake_List[0]
-
-        for x in snake_List[:-1]:
-            if x == snake_Head:
-                game_close = True
-
-        our_snake(snake_block, snake_List)
-        your_score(Length_of_snake - 1)
-
-        pygame.display.update()
-
-        if x1 == foodx and y1 == foody:
-            foodx = round(random.randrange(0, screen_width - snake_block) / 20.0) * 20.0
-            foody = round(random.randrange(0, screen_height - snake_block) / 20.0) * 20.0
-            Length_of_snake += 1
-
-            if random.randint(1, 5) == 1:  # 20% chance to trigger easter egg
-                easter_egg_message = "@rekharoy"
-                easter_egg_timer = 30  # Show for 30 frames
-                easter_egg_pos = (random.randint(50, max(51, screen_width - 250)), random.randint(50, max(51, screen_height - 100)))
+            if event.type != pygame.KEYDOWN:
+                continue
+            if event.key == pygame.K_f:
+                toggle_fullscreen()
+            elif event.key == pygame.K_ESCAPE and is_fullscreen:
+                toggle_fullscreen()
+            elif event.key == pygame.K_q:
+                state.game_over = True
+                state.game_close = False
+            elif event.key == pygame.K_c:
+                main_game()
 
 
+def _reposition_food_if_needed(state: GameState) -> None:
+    if state.food_x >= screen_width - snake_block:
+        state.food_x = _random_food_coordinate(screen_width)
+    if state.food_y >= screen_height - snake_block:
+        state.food_y = _random_food_coordinate(screen_height)
+
+
+def _handle_game_key(state: GameState, key: int) -> None:
+    if key == pygame.K_f:
+        toggle_fullscreen()
+        _reposition_food_if_needed(state)
+    elif key == pygame.K_ESCAPE and is_fullscreen:
+        toggle_fullscreen()
+        _reposition_food_if_needed(state)
+    elif key == pygame.K_LEFT:
+        state.x_change, state.y_change = -snake_block, 0
+    elif key == pygame.K_RIGHT:
+        state.x_change, state.y_change = snake_block, 0
+    elif key == pygame.K_UP:
+        state.x_change, state.y_change = 0, -snake_block
+    elif key == pygame.K_DOWN:
+        state.x_change, state.y_change = 0, snake_block
+
+
+def _handle_gameplay_events(state: GameState) -> None:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            state.game_over = True
+        elif event.type == pygame.KEYDOWN:
+            _handle_game_key(state, event.key)
+
+
+def _advance_snake(state: GameState) -> None:
+    if (
+        state.x >= screen_width
+        or state.x < 0
+        or state.y >= screen_height
+        or state.y < 0
+    ):
+        state.game_close = True
+    state.x += state.x_change
+    state.y += state.y_change
+    snake_head = [state.x, state.y]
+    state.segments.append(snake_head)
+    if len(state.segments) > state.length:
+        del state.segments[0]
+    if snake_head in state.segments[:-1]:
+        state.game_close = True
+
+
+def _render_game(state: GameState) -> None:
+    screen.fill(black)
+    if state.easter_egg_timer > 0:
+        easter_egg = font_style.render(state.easter_egg_message, True, white)
+        screen.blit(easter_egg, state.easter_egg_pos)
+        state.easter_egg_timer -= 1
+    pygame.draw.rect(
+        screen,
+        red,
+        [state.food_x, state.food_y, snake_block, snake_block],
+    )
+    our_snake(snake_block, state.segments)
+    your_score(state.length - 1)
+    pygame.display.update()
+
+
+def _handle_food_collision(state: GameState) -> None:
+    if state.x != state.food_x or state.y != state.food_y:
+        return
+    state.food_x, state.food_y = _random_food_position()
+    state.length += 1
+    if random.randint(1, 5) == 1:
+        state.easter_egg_message = "@rekharoy"
+        state.easter_egg_timer = 30
+        state.easter_egg_pos = (
+            random.randint(50, max(51, screen_width - 250)),
+            random.randint(50, max(51, screen_height - 100)),
+        )
+
+
+def gameLoop(player_name: str = "Player") -> None:
+    state = _new_game_state()
+    while not state.game_over:
+        _handle_game_over_screen(state, player_name)
+        _handle_gameplay_events(state)
+        _advance_snake(state)
+        _render_game(state)
+        _handle_food_collision(state)
         clock.tick(snake_speed)
-
     pygame.quit()
     sys.exit()
 
 
-def start_screen():
+def start_screen() -> None:
     intro = True
     while intro:
         for event in pygame.event.get():
@@ -299,14 +344,18 @@ def start_screen():
         message("Welcome to Snake!", green)
         message("Press SPACE to start", white, 50)
         message("Press H for High Scores", white, 100)
-        hint_text = "Press F for Fullscreen" if not is_fullscreen else "Press ESC to exit Fullscreen"
+        hint_text = (
+            "Press F for Fullscreen"
+            if not is_fullscreen
+            else "Press ESC to exit Fullscreen"
+        )
         hint = small_font.render(hint_text, True, white)
         screen.blit(hint, [screen_width / 3, screen_height - 40])
         pygame.display.update()
         clock.tick(15)
 
 
-def show_high_scores_menu():
+def show_high_scores_menu() -> None:
     viewing = True
     while viewing:
         for event in pygame.event.get():
@@ -316,7 +365,7 @@ def show_high_scores_menu():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_SPACE:
                     viewing = False
-        
+
         display_high_scores()
         hint = small_font.render("Press ESC or SPACE to return", True, white)
         screen.blit(hint, [screen_width / 3, screen_height - 40])
@@ -324,11 +373,11 @@ def show_high_scores_menu():
         clock.tick(15)
 
 
-def main_game():
+def main_game() -> None:
     player_name = get_player_name()
     gameLoop(player_name)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     start_screen()
     main_game()
